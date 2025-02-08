@@ -8,7 +8,6 @@ screen = pygame.display.set_mode((1200, 800))
 clock = pygame.time.Clock()
 
 
-# Определение классов для игрока, охранника, стены, цели (выхода) и шкафа
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, speed=5, sprint_speed=10, max_stamina=100, stamina_regen_rate=1):
         super().__init__()
@@ -23,8 +22,6 @@ class Player(pygame.sprite.Sprite):
         self.is_sprinting = False  # Флаг спринта
         self.speed = self.normal_speed  # Начальная скорость
         self.in_closet = False  # Флаг нахождения в шкафу
-
-        # Таймеры для контроля спринта и восстановления
         self.sprint_timer = 0  # Время, оставшееся до конца спринта
         self.regen_timer = 0  # Время, оставшееся до начала восстановления
 
@@ -143,10 +140,10 @@ class Guard(pygame.sprite.Sprite):
                 break
 
         # Изменяем направление при достижении границ экрана
-        if self.rect.left < 0 or self.rect.right > 800:
+        if self.rect.left < 0 or self.rect.right > 1200:
             self.direction_x *= -1
             self.facing_direction = math.atan2(self.direction_y, self.direction_x)  # Обновить направление взгляда
-        if self.rect.top < 0 or self.rect.bottom > 600:
+        if self.rect.top < 0 or self.rect.bottom > 800:
             self.direction_y *= -1
             self.facing_direction = math.atan2(self.direction_y, self.direction_x)  # Обновить направление взгляда
 
@@ -231,20 +228,29 @@ player = Player(50, 50, speed=4)  # Увеличиваем скорость иг
 walls = [
     Wall(200, 100, 16, 400),  # Левая стена
     Wall(584, 100, 16, 200),  # Правая стена
-    Wall(392, 100, 416, 16),  # Верхняя стена
-    Wall(392, 484, 416, 16)  # Нижняя стена
+    Wall(300, 100, 700, 16),  # Верхняя стена
+    Wall(200, 484, 605, 16),   # Нижняя стена
+    Wall(800, 300, 16, 200),
+    Wall(1000, 100, 16, 600),
+    Wall(200, 700, 816, 16),
+    Wall(200, 500, 16, 200),
+
 ]
 closets = [
-    Closet(750, 440),
-    Closet(650, 50)
+    Closet(650, 200),
+    Closet(950, 650)
 ]
 guards = [
-    Guard(300, 150, direction_x=3, direction_y=0, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200),
+    Guard(300, 400, direction_x=3, direction_y=0, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200),
     # Горизонтальный патруль
-    Guard(450, 250, direction_x=0, direction_y=3, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200)
+    Guard(260, 250, direction_x=0, direction_y=3, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200),
     # Вертикальный патруль
+    Guard(900, 250, direction_x=0, direction_y=3, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200),
+
+    Guard(900, 600, direction_x=3, direction_y=0, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200),
+
 ]
-exit = Exit(700, 150)
+exit = Exit(300, 600)
 
 all_sprites = pygame.sprite.Group(player, *walls, *guards, exit, *closets)
 show_hitboxes = False
