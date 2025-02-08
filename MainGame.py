@@ -1,11 +1,10 @@
 import math
 import pygame
-from random import randint
 
 pygame.init()
 screen = pygame.display.set_mode((1200, 800))
 clock = pygame.time.Clock()
-
+pygame.display.set_caption('Path To popularity')
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, speed=5, sprint_speed=10, max_stamina=100, stamina_regen_rate=1):
