@@ -4,7 +4,7 @@ from random import randint
 
 # Инициализация Pygame
 pygame.init()
-screen = pygame.display.set_mode((800, 600))
+screen = pygame.display.set_mode((1200, 800))
 clock = pygame.time.Clock()
 
 
@@ -24,6 +24,10 @@ class Player(pygame.sprite.Sprite):
         self.speed = self.normal_speed  # Начальная скорость
         self.in_closet = False  # Флаг нахождения в шкафу
 
+        # Таймеры для контроля спринта и восстановления
+        self.sprint_timer = 0  # Время, оставшееся до конца спринта
+        self.regen_timer = 0  # Время, оставшееся до начала восстановления
+
     def update(self):
         keys = pygame.key.get_pressed()
 
@@ -40,10 +44,8 @@ class Player(pygame.sprite.Sprite):
             self.rect.y += self.speed
 
         # Управление спринтом
-        if keys[pygame.K_LSHIFT] and self.stamina > 0:
+        if keys[pygame.K_LSHIFT] and self.stamina > 0 and self.regen_timer <= 0:
             self.start_sprint()
-        else:
-            self.stop_sprint()
 
         # Проверка столкновения со стенами
         hit_wall = pygame.sprite.spritecollideany(self, walls)
@@ -54,15 +56,24 @@ class Player(pygame.sprite.Sprite):
         # Ограничение движения по экрану
         if self.rect.left < 0:
             self.rect.left = 0
-        elif self.rect.right > 800:
-            self.rect.right = 800
+        elif self.rect.right > 1200:
+            self.rect.right = 1200
         if self.rect.top < 0:
             self.rect.top = 0
-        elif self.rect.bottom > 600:
-            self.rect.bottom = 600
+        elif self.rect.bottom > 800:
+            self.rect.bottom = 800
+
+        # Обновление таймера спринта
+        if self.sprint_timer > 0:
+            self.sprint_timer -= 1
+            if self.sprint_timer == 0:
+                self.stop_sprint()
+                self.regen_timer = 120  # 2 секунды восстановления (при 60 FPS)
+        elif self.regen_timer > 0:
+            self.regen_timer -= 1
 
         # Восстанавливаем выносливость, если она меньше максимальной
-        if self.stamina < self.max_stamina:
+        if self.stamina < self.max_stamina and self.regen_timer <= 0:
             self.stamina += self.stamina_regen_rate
             if self.stamina > self.max_stamina:
                 self.stamina = self.max_stamina
@@ -72,10 +83,14 @@ class Player(pygame.sprite.Sprite):
             self.is_sprinting = True
             self.speed = self.sprint_speed
             self.stamina -= 1
+            self.sprint_timer = 60  # 1,5 секунды спринта (при 60 FPS)
 
     def stop_sprint(self):
         self.is_sprinting = False
         self.speed = self.normal_speed
+        if self.sprint_timer > 0:
+            self.sprint_timer = 0
+            self.regen_timer = 120  # 2 секунды восстановления (при 60 FPS)
 
     def get_stamina_percentage(self):
         return self.stamina / self.max_stamina * 100
@@ -178,15 +193,19 @@ class Guard(pygame.sprite.Sprite):
     def draw_vision_cone(self, surface):
         # Рисуем конус обзора
         if not self.chasing:
-         center = self.rect.center
-         left_point = (
-            center[0] + int(self.vision_range * math.cos(self.facing_direction + math.radians(self.vision_angle / 2))),
-            center[1] + int(self.vision_range * math.sin(self.facing_direction + math.radians(self.vision_angle / 2))))
-         right_point = (
-            center[0] + int(self.vision_range * math.cos(self.facing_direction - math.radians(self.vision_angle / 2))),
-            center[1] + int(self.vision_range * math.sin(self.facing_direction - math.radians(self.vision_angle / 2))))
-         points = [center, left_point, right_point]
-         pygame.draw.polygon(surface, (255, 0, 0, 20), points)  # Полупрозрачный красный цвет
+            center = self.rect.center
+            left_point = (
+                center[0] + int(
+                    self.vision_range * math.cos(self.facing_direction + math.radians(self.vision_angle / 2))),
+                center[1] + int(
+                    self.vision_range * math.sin(self.facing_direction + math.radians(self.vision_angle / 2))))
+            right_point = (
+                center[0] + int(
+                    self.vision_range * math.cos(self.facing_direction - math.radians(self.vision_angle / 2))),
+                center[1] + int(
+                    self.vision_range * math.sin(self.facing_direction - math.radians(self.vision_angle / 2))))
+            points = [center, left_point, right_point]
+            pygame.draw.polygon(surface, (255, 0, 0, 20), points)  # Полупрозрачный красный цвет
         else:
             pass
 
@@ -220,8 +239,10 @@ closets = [
     Closet(650, 50)
 ]
 guards = [
-    Guard(300, 150, direction_x=3, direction_y=0, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200),  # Горизонтальный патруль
-    Guard(450, 250, direction_x=0, direction_y=3, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200)  # Вертикальный патруль
+    Guard(300, 150, direction_x=3, direction_y=0, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200),
+    # Горизонтальный патруль
+    Guard(450, 250, direction_x=0, direction_y=3, patrol_speed=1, chase_speed=6, vision_angle=60, vision_range=200)
+    # Вертикальный патруль
 ]
 exit = Exit(700, 150)
 
@@ -271,8 +292,7 @@ while running:
     if show_hitboxes:
         for sprite in all_sprites:
             pygame.draw.rect(screen, (255, 255, 255), sprite.rect, 1)
-
+    all_sprites.draw(screen)
     pygame.display.flip()
     clock.tick(30)
-
 pygame.quit()
